@@ -20,7 +20,7 @@ struct ob {
 	bool mirror;
 };
 
-const int obCount = 5;
+const int obCount = 6;
 ob objs[obCount];
 /*
 float ray_intersect_plane(vec3 R_o, vec3 R_d, plane obj){
@@ -127,7 +127,7 @@ vec3 cast_ray2(vec3 orig, vec3 dir) {
 }
 vec3 cast_ray(vec3 orig, vec3 dir) {
 	vec3 color;
-	float closeSoFar = 100.0;
+	float closeSoFar = 1000.0;
 
 	vec3 colorSoFar = vec3(0.2471, 0.8784, 1.00);
 	for(int i= 0; i < obCount; i++){
@@ -146,7 +146,8 @@ vec3 cast_ray(vec3 orig, vec3 dir) {
 				vec3 normal = get_norm(orig, dir, objs[i]);
 				float dotProd = dot(normal, dir);
 				vec3 r = dir - 2.0 * dotProd * normal;
-				colorSoFar = cast_ray2(hitPoint, r);
+				float f = .04;
+				colorSoFar = cast_ray2(hitPoint, r) * (1.0 - f ) + objs[i].color * f;
 				closeSoFar = dist;
 				} else {
 						
@@ -173,8 +174,8 @@ void main()
 
 	objs[1].normal = vec3(0.0, 0.0, -1.0);
 	objs[1].d = 2.0;
-	objs[1].mirror = true;
-	objs[1].color = vec3(0.,1.0,1.0);
+	//objs[1].mirror = true;
+	objs[1].color = vec3(0.,0.3,.6);
 	objs[1].type = 1;
 
 	objs[2].normal = vec3(0.0, 1.0, 0.0);
@@ -188,10 +189,18 @@ void main()
 	objs[3].type = 0;
 
 
-	objs[4].pos = vec3(-8.0, -1.0, 1.0);
-	objs[4].radius = .2;
-	objs[4].color = vec3(1,1,0);
+
+	objs[4].pos = vec3(-8.0, 1.0, .0);
+	objs[4].radius = 1.;
+	objs[4].color = vec3(1,0,0);
 	objs[4].type = 0;
+	objs[4].mirror = true;
+
+
+	objs[5].pos = vec3(-8.0, -1.0, 1.0);
+	objs[5].radius = .2;
+	objs[5].color = vec3(1,1,0);
+	objs[5].type = 0;
 
 	float fov = 90.0;
 	 //float x = (2.0 *((gl_FragCoord.x   + 0.5)/(u_resolution.x  + 1.0)- 0.5)) * tan(90.0/2.0) * u_resolution.x/u_resolution.y;
