@@ -98,6 +98,33 @@ bool intersectAny(vec3 orig, vec3 dir, float maxDist) {
 }
 
 
+vec3 cast_ray2(vec3 orig, vec3 dir) {
+	vec3 color;
+	float closeSoFar = 100.0;
+
+	vec3 colorSoFar = vec3(0.2471, 0.8784, 1.00);
+	for(int i= 0; i < obCount; i++){
+		float dist = ray_intersect(orig, dir, objs[i]);
+		if (dist > epsilon) {
+			if(dist < closeSoFar) {
+				if(objs[i].mirror) {
+				colorSoFar = vec3(1.0);
+				closeSoFar = dist;
+				} else {
+						
+				vec3 hitPoint = (dist * dir) + orig;
+				vec3 lightFace = normalize(lightsource - hitPoint);
+				colorSoFar = objs[i].color * max(dot(get_norm(orig, dir, objs[i]), lightFace), 0.0);
+				closeSoFar = dist;
+				if(intersectAny(hitPoint, lightFace, length(lightsource - hitPoint))){
+					colorSoFar = vec3(0.0, 0.0, 0.0);
+				}
+				}
+			}
+		}
+	}
+	return colorSoFar;
+}
 vec3 cast_ray(vec3 orig, vec3 dir) {
 	vec3 color;
 	float closeSoFar = 100.0;
@@ -119,7 +146,8 @@ vec3 cast_ray(vec3 orig, vec3 dir) {
 				vec3 normal = get_norm(orig, dir, objs[i]);
 				float dotProd = dot(normal, dir);
 				vec3 r = dir - 2.0 * dotProd * normal;
-				cast_ray2(hitPoint, r);
+				colorSoFar = cast_ray2(hitPoint, r);
+				closeSoFar = dist;
 				} else {
 						
 				vec3 hitPoint = (dist * dir) + orig;
@@ -135,7 +163,6 @@ vec3 cast_ray(vec3 orig, vec3 dir) {
 	}
 	return colorSoFar;
 }
-
 
 void main()
 {
