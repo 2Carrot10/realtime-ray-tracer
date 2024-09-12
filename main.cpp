@@ -143,6 +143,9 @@ int main()
 
 				handelInput();
         window.clear();
+				float a = .003 / 5.0;
+				float b = .15 / 5.0;
+				player.move(sf::Vector3f(0.0,sin(clock.getElapsedTime().asSeconds() * b) * a, cos(clock.getElapsedTime().asSeconds() * b) * a));
         window.draw(shape, &shader);
         window.display();
     }
