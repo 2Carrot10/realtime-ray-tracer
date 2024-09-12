@@ -11,7 +11,8 @@
 
 
 sf::Vector2i mousePosition;
-sf::RenderWindow window(sf::VideoMode(800, 600), "SFML Shader Example");
+sf::Vector2i size(1920,1080);
+sf::RenderWindow window(sf::VideoMode(size.x, size.y), "SFML Shader Example");
 
 class Player {
 
