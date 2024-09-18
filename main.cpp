@@ -112,7 +112,7 @@ int main()
         return -1;
     }
 
-    sf::RectangleShape shape(sf::Vector2f(100,100));
+    sf::RectangleShape shape(sf::Vector2f(500,500));
 		shape.setPosition(sf::Vector2f(0,0));
     shape.setFillColor(sf::Color::White);
 
@@ -129,10 +129,16 @@ int main()
         sf::Event event;
         while (window.pollEvent(event))
         {
+				if (event.type == sf::Event::Resized)
+						{
+								// update the view to the new size of the window
+								sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
+								window.setView(sf::View(visibleArea));
+						}
+
             if (event.type == sf::Event::Closed) window.close();
         }
 
-				//shader.setUniform("u_time", clock.getElapsedTime().asSeconds());
         shader.setUniform("u_resolution", sf::Vector2f(window.getSize()));
         shader.setUniform("orig", player.getHeadTransform());
         //shader.setUniform("time", clock.getElapsedTime().asSeconds());
@@ -140,7 +146,6 @@ int main()
 					player.getEulerAngle()[1],
 					player.getEulerAngle()[2]
 					));
-				//std::cout << player.getHeadTransform().x << ", " << player.getHeadTransform().y;
 
 				handelInput();
         window.clear();

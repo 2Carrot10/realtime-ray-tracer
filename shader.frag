@@ -260,8 +260,9 @@ void main()
 	//objs[6].mirror = true;
 
 
-	float x  = (gl_FragCoord.x / (u_resolution.x  + 1.0))- 0.5; 
-	float y = (gl_FragCoord.y/(u_resolution.y  + 1.0))- 0.5;
+	float x = (gl_FragCoord.x / (u_resolution.x  + 1.0)) - 0.5; 
+	float y = (gl_FragCoord.y / (u_resolution.x  + 1.0)) - 0.5;
+	//float y = (gl_FragCoord.y / (u_resolution.y  + 1.0)) - 0.5;
 
 	vec3 dir = normalize(vec3(x, y, 1.0));
 	vec3 dir2 = vec3(dir.x * cos(eRot.x) - dir.z * sin(eRot.x), dir.y, dir.z * cos(eRot.x) + dir.x * sin(eRot.x));
