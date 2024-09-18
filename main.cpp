@@ -135,6 +135,7 @@ int main()
 				//shader.setUniform("u_time", clock.getElapsedTime().asSeconds());
         shader.setUniform("u_resolution", sf::Vector2f(window.getSize()));
         shader.setUniform("orig", player.getHeadTransform());
+        //shader.setUniform("time", clock.getElapsedTime().asSeconds());
 				shader.setUniform("eRot", sf::Vector3f(player.getEulerAngle()[0],
 					player.getEulerAngle()[1],
 					player.getEulerAngle()[2]
@@ -143,9 +144,6 @@ int main()
 
 				handelInput();
         window.clear();
-				float a = .003 / 5.0;
-				float b = .15 / 5.0;
-				player.move(sf::Vector3f(0.0,sin(clock.getElapsedTime().asSeconds() * b) * a, cos(clock.getElapsedTime().asSeconds() * b) * a));
         window.draw(shape, &shader);
         window.display();
     }
