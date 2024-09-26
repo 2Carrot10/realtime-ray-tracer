@@ -105,6 +105,7 @@ void handelInput() {
 
 int main()
 {
+    mousePosition = sf::Mouse::getPosition();
 
     sf::Shader shader;
     if (!shader.loadFromFile("shader.frag", sf::Shader::Fragment))

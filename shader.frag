@@ -27,10 +27,10 @@ struct ls {
 	float power;
 };
 
-const int obCount = 8;
+const int obCount = 9;
 ob objs[obCount];
 
-const int lsCount = 2;
+const int lsCount = 1;
 ls lights[lsCount];
 
 float ray_intersect(vec3 R_o, vec3 R_d, ob obj) {
@@ -139,7 +139,7 @@ vec3 cast_ray(vec3 orig, vec3 dir) {
 		for(int i= 0; i < obCount; i++){
 			float dist = ray_intersect(orig, dir, objs[i]);
 
-			if (dist > epsilon && dist < closeSoFar) {
+			if (dist > epsilon && dist < closeSoFar && dot(dir, get_norm(orig, dir, objs[i])) < 0.0) {
 				vec3 hitPoint = (dist * dir) + orig;
 				colorSoFar = vec3(0.);
 				for(int k = 0; k < lsCount; k++){
@@ -194,74 +194,69 @@ vec3 cast_ray(vec3 orig, vec3 dir) {
 
 void main()
 {
-	lights[0].pos = vec3(-7.0, .0, 0.7);
-	lights[0].color = vec3(.1, 0.1, 1.);
+
+	float boxSize = 3.0;
+
+	lights[0].pos = vec3(.0, boxSize - .3, 0.0);
+	lights[0].color = vec3(1., 1., 1.);
 	lights[0].power = 1.0;
 
-
-	lights[1].pos = vec3(-4.0, 1.5, -.7);
-	lights[1].color = vec3(1, 0.1, 0.1);
-	lights[1].power = 1.0;
-
-
 	objs[0].normal = vec3(0., 0.0, 1.0);
-	objs[0].d = 3.0;
+	objs[0].d = boxSize;
 	objs[0].color = vec3(1.0,1.0,1.0);
 	objs[0].type = 1;
-	//objs[0].mirror = true;
+
+
+	objs[2].normal = vec3(0., -1.0, 0.0);
+	objs[2].d = boxSize;
+	objs[2].color = vec3(1.0,1.0,1.0);
+	objs[2].type = 1;
+
+	objs[3].normal = vec3(0., 1.0, 0.0);
+	objs[3].d = boxSize;
+	objs[3].color = vec3(1.0,1.0,1.0);
+	objs[3].type = 1;
+
+
+
+	objs[4].normal = vec3(-1., .0, 0.0);
+	objs[4].d = boxSize;
+	objs[4].color = vec3(1.0,0.0,.0);
+	objs[4].type = 1;
+
+	objs[5].normal = vec3(1., 0.0, 0.0);
+	objs[5].d = boxSize;
+	objs[5].color = vec3(.0,.0,1.0);
+	objs[5].type = 1;
+
+	objs[6].normal = vec3(-1., .0, 0.0);
+	objs[6].d = boxSize;
+	objs[6].color = vec3(1.0,0.0,.0);
+	objs[6].type = 0;
+
+	objs[7].radius = .7;
+	objs[7].pos = vec3(1., -boxSize+objs[7].radius, -1.0);
+	objs[7].color = vec3(1.0,1.0,1.0);
+	objs[7].type = 0;
+	objs[7].mirror = true;
+
+
+
+
+	objs[8].radius = 1.9;
+	objs[8].pos = vec3(-1., -boxSize+objs[8].radius, 1.);
+	objs[8].color = vec3(1.0,1.0,1.0);
+	objs[8].type = 0;
+
 
 	objs[1].normal = vec3(0.0, 0.0, -1.0);
-	objs[1].d = 2.0;
+	objs[1].d = boxSize;
 	//objs[1].mirror = true;
 	objs[1].color = vec3(1.,1.,1.);
 	objs[1].type = 1;
-	//objs[1].mirror = true; //CHANGE
-	//objs[1].mirror = false; //CHANGE
 
-	objs[2].normal = vec3(0.0, 1.0, 0.0);
-	objs[2].d = 2.0;
-	objs[2].color = vec3(.0,1.0,1.0);
-	objs[2].type = 1;
-	//objs[2].mirror = true;
-
-	objs[3].pos = vec3(-8.0, -1.0, -1.0);
-	objs[3].radius = 1.;
-	objs[3].color = vec3(1,0,0);
-	objs[3].type = 0;
-	//objs[3].mirror = true;
-
-
-
-	objs[4].pos = vec3(-8.0, 1.0, .0);
-	objs[4].radius = 1.;
-	objs[4].color = vec3(1,0,0);
-	objs[4].type = 0;
-
-
-
-	objs[5].pos = vec3(-8.0, -1.0, 1.0);
-	objs[5].radius = .2;
-	objs[5].color = vec3(1,1,0);
-	objs[5].type = 0;
-
-
-	objs[6].normal = vec3(-1., 0.0, .0);
-	objs[6].d = 3.0;
-	objs[6].color = vec3(.2,0,.5);
-	objs[6].type = 1;
-
-
-	objs[7].normal = vec3(1., 0.0, .0);
-	objs[7].d = 12.0;
-	objs[7].color = vec3(1.0,0,1.0);
-	objs[7].type = 1;
-	objs[7].mirror = false;//true;
-
-	//objs[6].mirror = true;
-
-
-	float x = (gl_FragCoord.x / (u_resolution.x  + 1.0)) - 0.5; 
-	float y = (gl_FragCoord.y / (u_resolution.x  + 1.0)) - 0.5;
+	float x = (gl_FragCoord.x / (u_resolution.y)) - 0.5 * u_resolution.x / u_resolution.y; 
+	float y = (gl_FragCoord.y / (u_resolution.y)) - 0.5;
 	//float y = (gl_FragCoord.y / (u_resolution.y  + 1.0)) - 0.5;
 
 	vec3 dir3 = normalize(vec3(x, y, 1.0));
