@@ -63,6 +63,7 @@ std::list<Sphere> spheres = {
 
 sf::Clock deltaClock;
 
+bool hasMoved= false;
 
 sf::Time dt;
 
@@ -71,25 +72,25 @@ void handelInput() {
     sf::Mouse::setPosition(sf::Vector2i(window.getSize().x / 2, window.getSize().y / 2));
     mousePosition = sf::Mouse::getPosition();
     float moveDistance = player.walkSpeed*dt.asSeconds();
-
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-    {
-        // left key is pressed: move our character
-        player.move(0.f, 0.f,.001f);//add delta time
-    }
-   
     sf::Vector3f deltaPos(0.f,0.f,0.f);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))deltaPos.z+= moveDistance;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))deltaPos.z += -moveDistance;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))deltaPos.x += -moveDistance;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))deltaPos.x+= moveDistance;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))deltaPos.y+=moveDistance;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))deltaPos.y+= -moveDistance;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::E))player.rotate(1*dt.asSeconds(), 0, 0);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))player.rotate(-1 * dt.asSeconds(), 0, 0);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z))player.rotate(0, 1 * dt.asSeconds(), 0);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::X))player.rotate(0, -1 * dt.asSeconds(), 0);
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)){ deltaPos.z+= moveDistance;}
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)){deltaPos.z += -moveDistance;}
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)){deltaPos.x += -moveDistance;}
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)){deltaPos.x+= moveDistance;}
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)){deltaPos.y+=moveDistance;}
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::C)){deltaPos.y+= -moveDistance;}
 
+
+		if(deltaPos.x != 0 || deltaPos.y != 0 || deltaPos.z != 0){hasMoved = true;}
+		else if(deltaMousePosition.x != 0 || deltaMousePosition.y != 0){hasMoved = true;}
+		else {hasMoved = false;}
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::E)){hasMoved = true;player.rotate(1*dt.asSeconds(), 0, 0);}
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)){hasMoved = true;player.rotate(-1 * dt.asSeconds(), 0, 0);}
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)){hasMoved = true;player.rotate(0, 1 * dt.asSeconds(), 0);}
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::X)){hasMoved = true;player.rotate(0, -1 * dt.asSeconds(), 0);}
+
+		//hasMoved = true;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))window.close();
 
     player.rotate(deltaMousePosition.x*player.turnSpeed, -deltaMousePosition.y * player.turnSpeed, 0);
@@ -142,15 +143,17 @@ int main()
 
         shader.setUniform("u_resolution", sf::Vector2f(window.getSize()));
         shader.setUniform("orig", player.getHeadTransform());
-        //shader.setUniform("time", clock.getElapsedTime().asSeconds());
+        shader.setUniform("hasMoved", hasMoved);
+        shader.setUniform("time", clock.getElapsedTime().asSeconds());
+				if(clock.getElapsedTime().asSeconds() > 5.0f) clock.restart();
 				shader.setUniform("eRot", sf::Vector3f(player.getEulerAngle()[0],
 					player.getEulerAngle()[1],
 					player.getEulerAngle()[2]
 					));
-
-				handelInput();
-        window.clear();
+        //window.clear();
+			
         window.draw(shape, &shader);
         window.display();
+				handelInput();
     }
 }

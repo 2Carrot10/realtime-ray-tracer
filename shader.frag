@@ -4,9 +4,13 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform vec3 eRot;
 uniform vec3 orig;
-//uniform float time;
+uniform float time;
+uniform bool hasMoved;
 
-float epsilon = .02;
+float epsilon = .01;
+
+
+//ob stores planes and spheres
 struct ob {
 	int type;
 	// For spheres (type 0)	
@@ -40,31 +44,24 @@ float ray_intersect(vec3 R_o, vec3 R_d, ob obj) {
 
 	vec3 oc = R_o - obj.pos;
 
-	// Quadratic coefficients
-	float a = dot(R_d, R_d); // Should be 1.0 if R_d is normalized
+	float a = dot(R_d, R_d);
 	float b = 2.0 * dot(oc, R_d);
 	float c = dot(oc, oc) - obj.radius * obj.radius;
 
-	// Discriminant of the quadratic formula
 	float discriminant = b * b - 4.0 * a * c;
 
-	// No intersection if the discriminant is negative
 	if (discriminant < 0.0) {
 		return -1.0;
 	}
+	float t1 = (-b - sqrt(discriminant)) / (2.0 * a);
+	float t2 = (-b + sqrt(discriminant)) / (2.0 * a);
 
-	// Compute the two possible values for t (near and far intersection points)
-	float t1 = (-b - sqrt(discriminant)) / (2.0 * a); // Smaller t (near intersection)
-	float t2 = (-b + sqrt(discriminant)) / (2.0 * a); // Larger t (far intersection)
-
-	// Return the smallest positive t (closest intersection point)
 	if (t1 > 0.0) {
-		return t1; // Return the closest intersection point if it's in front of the ray
+		return t1;
 	} else if (t2 > 0.0) {
-		return t2; // Otherwise, return the far intersection point if it's in front
+		return t2;
 	}
-
-	return -1.0; // If both intersections are behind the ray origin, no valid intersection
+	return -1.0;
 }
 
 vec3 get_norm(vec3 R_o, vec3 R_d, ob obj) {
@@ -85,46 +82,70 @@ bool intersectAny(vec3 orig, vec3 dir, float maxDist) {
 	}
 	return false;
 }
-// three are color. the last is position 
-vec4 cast_ray_for_global(vec3 orig, vec3 dir) {
+
+float random2d(vec3 coord){
+	return fract(time * sin(dot(coord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+vec3 cast_ray_2(vec3 orig, vec3 dir) {
 	vec3 color;
 	float closeSoFar = 1000.0;
 
+	bool closestIsMirror = false;
 	vec3 closestHitPoint;
 	vec3 closestDir;
 	float colorApplicationSoFar = 0.0;
 	vec3 colorSoFar = vec3(0.2471, 0.8784, 1.00);
-	for(int i= 0; i < obCount; i++){
-		float dist = ray_intersect(orig, dir, objs[i]);
+	for(int j = 0; j < 20; j++){
+		for(int i= 0; i < obCount; i++){
+			float dist = ray_intersect(orig, dir, objs[i]);
 
-		if (dist > epsilon && dist < closeSoFar) {
-			vec3 hitPoint = (dist * dir) + orig;
-			colorSoFar = vec3(0.);
-			for(int k = 0; k < lsCount; k++){
-				if(!intersectAny(hitPoint, normalize(lights[k].pos - hitPoint), length(lights[k].pos - hitPoint))) {
-					vec3 lightFace = normalize(lights[k].pos - hitPoint);
-					float fa = 1.0 / pow(length(lights[k].pos - hitPoint) / 3.2, 2.0);
-					colorSoFar += objs[i].color * max(dot(get_norm(orig, dir, objs[i]), lightFace), 0.0) * lights[k].color * fa;
+			if (dist > epsilon && dist < closeSoFar && dot(dir, get_norm(orig, dir, objs[i])) < 0.0) {
+				vec3 hitPoint = (dist * dir) + orig;
+				colorSoFar = vec3(0.);
+				for(int k = 0; k < lsCount; k++){
+					if(!intersectAny(hitPoint, normalize(lights[k].pos - hitPoint), length(lights[k].pos - hitPoint))) {
+						vec3 lightFace = normalize(lights[k].pos - hitPoint);
+						float fa = 1.0 / pow(length(lights[k].pos - hitPoint) / 3.2, 2.0);
+						colorSoFar += objs[i].color * max(dot(get_norm(orig, dir, objs[i]), lightFace), 0.0) * lights[k].color * fa;
+					}
+					float max = 2.0;
+					float a = random2d(dir) * max - 1.0;
+					float b = random2d(dir.xzy) * max - 1.0;
+					float c = random2d(dir.yzx) * max - 1.0;
+
+					vec3 newDir = normalize(vec3(a, b, c));
+					if(0.0 > dot(newDir, get_norm(orig, dir, objs[i]))) {
+						newDir = -newDir;
+					}
+
+				}
+
+				closeSoFar = dist;
+				if(objs[i].mirror) {
+					vec3 normal = get_norm(orig, dir, objs[i]);
+					float dotProd = dot(normal, dir);
+					vec3 r = dir - 2.0 * dotProd * normal;
+					closestDir = r;
+					closestHitPoint = hitPoint;
+					closeSoFar = dist;
+					closestIsMirror = true;
+				} else {
+					closestIsMirror = false;
 				}
 			}
-
-			closeSoFar = dist;
-			vec3 normal = get_norm(orig, dir, objs[i]);
-			float dotProd = dot(normal, dir);
-			vec3 r = dir - 2.0 * dotProd * normal;
-			closestDir = r;
-			closestHitPoint = hitPoint;
-			closeSoFar = dist;
+		}
+		if(closestIsMirror) {
+			orig = closestHitPoint;
+			dir = closestDir;
+			closeSoFar = 1000.0;
+		} else {
+			return colorSoFar;
 		}
 	}
-	return vec4(colorSoFar, closestHitPoint);
-
+	return colorSoFar;
 }
 
-/*
-float random2d(vec3 coord){
-	return fract(time * sin(dot(coord.xy, vec2(12.9898, 78.233))) * 43758.5453);
-}*/
 
 vec3 cast_ray(vec3 orig, vec3 dir) {
 	vec3 color;
@@ -148,24 +169,18 @@ vec3 cast_ray(vec3 orig, vec3 dir) {
 						float fa = 1.0 / pow(length(lights[k].pos - hitPoint) / 3.2, 2.0);
 						colorSoFar += objs[i].color * max(dot(get_norm(orig, dir, objs[i]), lightFace), 0.0) * lights[k].color * fa;
 					}
-					/*
-					float max = 2.0 * 3.1415;
-					float a = random2d(dir * 2.0) * max;
-					float b = random2d(dir * 1.0) * max;
-					float c = random2d(dir * 3.0) * max;
+				}
+					float max = 2.0;
+					float a = random2d(dir * 2.0) * max - 1.0;
+					float b = random2d(dir * 1.0) * max - 1.0;
+					float c = random2d(dir * 3.0) * max - 1.0;
 
 					vec3 newDir = normalize(vec3(a, b, c));
 					if(0.0 > dot(newDir, get_norm(orig, dir, objs[i]))) {
 						newDir = -newDir;
 					}
-
-					vec4 colorResult = cast_ray_for_global(hitPoint, newDir);
-					vec3 lightFace = -newDir; 
-					float fa = 1.0 / colorResult.a;
-					//colorSoFar += colorResult.xyz * fa;
-					//colorSoFar += colorResult.xyz * max(dot(get_norm(orig, dir, objs[i]), colorResult.w * newDir), 0.0) * lights[k].color * fa * .000;
-				*/
-				}
+					colorSoFar/=2.0;
+					colorSoFar += cast_ray_2(hitPoint, newDir) / 2.0;
 
 				closeSoFar = dist;
 				if(objs[i].mirror) {
@@ -264,5 +279,5 @@ void main()
 	vec3 dir2 = vec3(dir.x * cos(eRot.x) - dir.z * sin(eRot.x), dir.y, dir.z * cos(eRot.x) + dir.x * sin(eRot.x));
 
 
-	gl_FragColor = vec4(cast_ray(orig, dir2),1.0);
+	gl_FragColor = vec4(cast_ray(orig, dir2),hasMoved?1.0:.04);
 }
