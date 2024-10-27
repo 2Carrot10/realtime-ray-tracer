@@ -84,7 +84,7 @@ bool intersectAny(vec3 orig, vec3 dir, float maxDist) {
 }
 
 float random2d(vec3 coord){
-	return fract(time * sin(dot(coord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+	return fract(coord.x + coord.y + time * sin(dot(coord.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 vec3 cast_ray_2(vec3 orig, vec3 dir) {
