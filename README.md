@@ -7,9 +7,6 @@ It was written using C++, GLSL, SFML, and Bash.
 
 The algorithms used in this repo are based online lectures from MIT 6837 by Justin Solomon.
 
-To run the code, you first must install sfml. In Arch you can run:
-```bash
-sudo pacman -S sfml
-```
-Then, you can run `./start`, to compile the code and open the renderer.
+To run the code, you first must install SFML version 2.x.x (the latest version of SFML does not currently work).
+Then, run `./start`, to compile the code and open the renderer.
 
