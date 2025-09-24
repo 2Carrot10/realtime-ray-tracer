@@ -7,12 +7,12 @@ uniform vec3 orig;
 uniform float time;
 uniform bool hasMoved;
 
-float epsilon = .01;
+float epsilon = .001;
 
 
 //ob stores planes and spheres
 struct ob {
-	int type;
+	int type; // spheres = 0, planes = 1
 	// For spheres (type 0)	
 	vec3 pos;
 	vec3 color;
@@ -30,6 +30,10 @@ struct ls {
 	vec3 color;
 	float power;
 };
+
+float random2d(vec3 coord){
+	return fract(coord.x + coord.y + time * sin(dot(coord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
 
 const int obCount = 9;
 ob objs[obCount];
@@ -81,10 +85,6 @@ bool intersectAny(vec3 orig, vec3 dir, float maxDist) {
 		}
 	}
 	return false;
-}
-
-float random2d(vec3 coord){
-	return fract(coord.x + coord.y + time * sin(dot(coord.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 vec3 cast_ray_2(vec3 orig, vec3 dir) {
@@ -221,7 +221,6 @@ void main()
 	objs[0].color = vec3(1.0,1.0,1.0);
 	objs[0].type = 1;
 
-
 	objs[2].normal = vec3(0., -1.0, 0.0);
 	objs[2].d = boxSize;
 	objs[2].color = vec3(1.0,1.0,1.0);
@@ -231,8 +230,6 @@ void main()
 	objs[3].d = boxSize;
 	objs[3].color = vec3(1.0,1.0,1.0);
 	objs[3].type = 1;
-
-
 
 	objs[4].normal = vec3(-1., .0, 0.0);
 	objs[4].d = boxSize;
@@ -255,9 +252,6 @@ void main()
 	objs[7].type = 0;
 	objs[7].mirror = true;
 
-
-
-
 	objs[8].radius = 1.9;
 	objs[8].pos = vec3(-1., -boxSize+objs[8].radius, 1.);
 	objs[8].color = vec3(1.0,1.0,1.0);
@@ -266,18 +260,18 @@ void main()
 
 	objs[1].normal = vec3(0.0, 0.0, -1.0);
 	objs[1].d = boxSize;
-	//objs[1].mirror = true;
+	objs[1].mirror = false;
 	objs[1].color = vec3(1.,1.,1.);
 	objs[1].type = 1;
 
 	float x = (gl_FragCoord.x / (u_resolution.y)) - 0.5 * u_resolution.x / u_resolution.y; 
 	float y = (gl_FragCoord.y / (u_resolution.y)) - 0.5;
-	//float y = (gl_FragCoord.y / (u_resolution.y  + 1.0)) - 0.5;
 
-	vec3 dir3 = normalize(vec3(x, y, 1.0));
-	vec3 dir = vec3(dir3.x, dir3.y * cos(eRot.y) - dir3.z * sin(eRot.y), dir3.z * cos(eRot.y) + dir3.y * sin(eRot.y));
-	vec3 dir2 = vec3(dir.x * cos(eRot.x) - dir.z * sin(eRot.x), dir.y, dir.z * cos(eRot.x) + dir.x * sin(eRot.x));
+	vec3 normalizedDir = normalize(vec3(x, y, 1.0));
+	vec3 xRotatedDir = vec3(normalizedDir.x, normalizedDir.y * cos(eRot.y) - normalizedDir.z * sin(eRot.y), normalizedDir.z * cos(eRot.y) + normalizedDir.y * sin(eRot.y));
+	vec3 xyRotatedDir = vec3(xRotatedDir.x * cos(eRot.x) - xRotatedDir.z * sin(eRot.x), xRotatedDir.y, xRotatedDir.z * cos(eRot.x) + xRotatedDir.x * sin(eRot.x));
 
+	float opacity = hasMoved ? 1.0 : .04;
 
-	gl_FragColor = vec4(cast_ray(orig, dir2),hasMoved?1.0:.04);
+	gl_FragColor = vec4(cast_ray(orig, xyRotatedDir), opacity);
 }

@@ -12,15 +12,14 @@ sf::Vector2i size(1920, 1080);
 sf::RenderWindow window(sf::VideoMode(size.x, size.y), "SFML Shader");
 
 class Player {
-    sf::Vector3f transform =
-        sf::Vector3f(0.0f, -1.0f, 0.0f); // location of feet. generaly at y=0
+    sf::Vector3f transform = sf::Vector3f(0.0f, -1.0f, 0.0f);
     sf::Vector3f headDeltaTransform = sf::Vector3f(0.0f, 1.0f, 0.0f);
     float fovScale = .7;
 
   public:
-    float eulerAngle[3] = {0, 0, 0}; // I hate quaternions
-    float walkSpeed = 3;             // in units per second
-    float turnSpeed = .001;          // in units per second
+    float eulerAngle[3] = {0, 0, 0};
+    float walkSpeed = 3;
+    float turnSpeed = .001;
     float getFovScale() { return fovScale; }
     sf::Vector3f getTransform() { return transform; }
     sf::Vector3f getHeadTransform() { return (transform + headDeltaTransform); }
@@ -86,37 +85,11 @@ void handelInput() {
         deltaPos.y += -moveDistance;
     }
 
-    if (deltaPos.x != 0 || deltaPos.y != 0 || deltaPos.z != 0) {
-        hasMoved = true;
-    } else if (deltaMousePosition.x != 0 || deltaMousePosition.y != 0) {
-        hasMoved = true;
-    } else {
-        hasMoved = false;
-    }
+    hasMoved = (deltaPos.x != 0 || deltaPos.y != 0 || deltaPos.z != 0) ||
+               (deltaMousePosition.x != 0 || deltaMousePosition.y != 0);
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::E)) {
-        hasMoved = true;
-        player.rotate(1 * dt.asSeconds(), 0, 0);
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) {
-        hasMoved = true;
-        player.rotate(-1 * dt.asSeconds(), 0, 0);
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) {
-        hasMoved = true;
-        player.rotate(0, 1 * dt.asSeconds(), 0);
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::X)) {
-        hasMoved = true;
-        player.rotate(0, -1 * dt.asSeconds(), 0);
-    }
-
-    // hasMoved = true;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
         window.close();
-
-    player.rotate(deltaMousePosition.x * player.turnSpeed,
-                  -deltaMousePosition.y * player.turnSpeed, 0);
 
     sf::Vector3f worldReletiveDeltaPos;
 
@@ -126,7 +99,12 @@ void handelInput() {
                               (deltaPos.x * sin(player.getEulerAngle()[0]));
     worldReletiveDeltaPos.y = deltaPos.y;
     player.move(worldReletiveDeltaPos);
+
+    player.rotate(deltaMousePosition.x * player.turnSpeed,
+                  -deltaMousePosition.y * player.turnSpeed, 0);
 }
+
+sf::Font font;
 
 int main() {
     mousePosition = sf::Mouse::getPosition();
@@ -135,6 +113,14 @@ int main() {
     if (!shader.loadFromFile("shader.frag", sf::Shader::Fragment)) {
         return -1;
     }
+
+if (!font.loadFromFile("Inconsolata-Bold.ttf"))
+{
+  std::cout << "Error loading font";
+}
+
+	sf::Text text;
+	text.setFont(font);
 
     sf::RectangleShape shape(sf::Vector2f(500, 500));
     shape.setPosition(sf::Vector2f(0, 0));
@@ -148,14 +134,18 @@ int main() {
     while (window.isOpen()) {
         dt = deltaClock.restart();
         shape.setPosition(0, 0);
-        shape.setSize(sf::Vector2f(window.getSize()));
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y)) {
+            shape.setSize(sf::Vector2f(window.getSize()));
+        }
         sf::Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Resized) {
-                // update the view to the new size of the window
-                sf::FloatRect visibleArea(0, 0, event.size.width,
-                                          event.size.height);
-                window.setView(sf::View(visibleArea));
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y)) {
+                if (event.type == sf::Event::Resized) {
+                    // update the view to the new size of the window
+                    sf::FloatRect visibleArea(0, 0, event.size.width,
+                                              event.size.height);
+                    window.setView(sf::View(visibleArea));
+                }
             }
 
             if (event.type == sf::Event::Closed)
@@ -164,18 +154,22 @@ int main() {
 
         shader.setUniform("u_resolution", sf::Vector2f(window.getSize()));
         shader.setUniform("orig", player.getHeadTransform());
-        // shader.setUniform("hasMoved", hasMoved);
-        shader.setUniform("time", 1.f);
+        shader.setUniform("hasMoved", hasMoved);
         shader.setUniform("time", clock.getElapsedTime().asSeconds());
         if (clock.getElapsedTime().asSeconds() > 5.0f)
             clock.restart();
 
+        shader.setUniform("eRot", sf::Vector3f(0, 0, 0));
+        auto location = player.getHeadTransform();
         shader.setUniform("eRot", sf::Vector3f(player.getEulerAngle()[0],
                                                player.getEulerAngle()[1],
                                                player.getEulerAngle()[2]));
-        // window.clear();
 
+		if(hasMoved) {
+        text.setString(std::to_string((1.0/dt.asSeconds())).substr(0,4));
+		}
         window.draw(shape, &shader);
+			window.draw(text);
         window.display();
         handelInput();
     }
