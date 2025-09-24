@@ -156,11 +156,11 @@ if (!font.loadFromFile("Inconsolata-Bold.ttf"))
         shader.setUniform("orig", player.getHeadTransform());
         shader.setUniform("hasMoved", hasMoved);
         shader.setUniform("time", clock.getElapsedTime().asSeconds());
+
         if (clock.getElapsedTime().asSeconds() > 5.0f)
             clock.restart();
 
         shader.setUniform("eRot", sf::Vector3f(0, 0, 0));
-        auto location = player.getHeadTransform();
         shader.setUniform("eRot", sf::Vector3f(player.getEulerAngle()[0],
                                                player.getEulerAngle()[1],
                                                player.getEulerAngle()[2]));

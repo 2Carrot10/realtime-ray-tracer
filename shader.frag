@@ -10,6 +10,10 @@ uniform bool hasMoved;
 float epsilon = .001;
 
 
+#define SPHERE 0
+
+#define PLANE 1
+
 //ob stores planes and spheres
 struct ob {
 	int type; // spheres = 0, planes = 1
@@ -42,39 +46,48 @@ const int lsCount = 1;
 ls lights[lsCount];
 
 float ray_intersect(vec3 R_o, vec3 R_d, ob obj) {
-	if(obj.type == 1) {
+	if(obj.type == PLANE) {
 		return -(obj.d + dot(obj.normal, R_o)) / dot(obj.normal, R_d);
-	}
+	} 
 
-	vec3 oc = R_o - obj.pos;
+	if(obj.type == SPHERE){
+		vec3 oc = R_o - obj.pos;
 
-	float a = dot(R_d, R_d);
-	float b = 2.0 * dot(oc, R_d);
-	float c = dot(oc, oc) - obj.radius * obj.radius;
+		float a = dot(R_d, R_d);
+		float b = 2.0 * dot(oc, R_d);
+		float c = dot(oc, oc) - obj.radius * obj.radius;
 
-	float discriminant = b * b - 4.0 * a * c;
+		float discriminant = b * b - 4.0 * a * c;
 
-	if (discriminant < 0.0) {
+		if (discriminant < 0.0) {
+			return -1.0;
+		}
+		float t1 = (-b - sqrt(discriminant)) / (2.0 * a);
+		float t2 = (-b + sqrt(discriminant)) / (2.0 * a);
+
+		if (t1 > 0.0) {
+			return t1;
+		} else if (t2 > 0.0) {
+			return t2;
+		}
 		return -1.0;
 	}
-	float t1 = (-b - sqrt(discriminant)) / (2.0 * a);
-	float t2 = (-b + sqrt(discriminant)) / (2.0 * a);
 
-	if (t1 > 0.0) {
-		return t1;
-	} else if (t2 > 0.0) {
-		return t2;
-	}
-	return -1.0;
+	// Something went wrong
+	return 0.0;
 }
 
+
 vec3 get_norm(vec3 R_o, vec3 R_d, ob obj) {
-	if(obj.type == 1) {
+	if(obj.type == PLANE) {
 		return obj.normal;
 	}
-	else {
+	if(obj.type == SPHERE) {
 		return normalize((ray_intersect(R_o, R_d, obj) * R_d + R_o) - obj.pos);
 	}
+
+	// Something went wrong
+	return vec3(0.0);
 }
 
 bool intersectAny(vec3 orig, vec3 dir, float maxDist) {
@@ -89,7 +102,7 @@ bool intersectAny(vec3 orig, vec3 dir, float maxDist) {
 
 vec3 cast_ray_2(vec3 orig, vec3 dir) {
 	vec3 color;
-	float closestSoFar = 1000.0;
+	float closeSoFar = 1000.0;
 
 	bool closestIsMirror = false;
 	vec3 closestHitPoint;
@@ -100,7 +113,7 @@ vec3 cast_ray_2(vec3 orig, vec3 dir) {
 		for(int i= 0; i < obCount; i++){
 			float dist = ray_intersect(orig, dir, objs[i]);
 
-			if (dist > epsilon && dist < closestSoFar && dot(dir, get_norm(orig, dir, objs[i])) < 0.0) {
+			if (dist > epsilon && dist < closeSoFar && dot(dir, get_norm(orig, dir, objs[i])) < 0.0) {
 				vec3 hitPoint = (dist * dir) + orig;
 				colorSoFar = vec3(0.);
 				for(int k = 0; k < lsCount; k++){
@@ -121,14 +134,14 @@ vec3 cast_ray_2(vec3 orig, vec3 dir) {
 
 				}
 
-				closestSoFar = dist;
+				closeSoFar = dist;
 				if(objs[i].mirror) {
 					vec3 normal = get_norm(orig, dir, objs[i]);
 					float dotProd = dot(normal, dir);
 					vec3 r = dir - 2.0 * dotProd * normal;
 					closestDir = r;
 					closestHitPoint = hitPoint;
-					closestSoFar = dist;
+					closeSoFar = dist;
 					closestIsMirror = true;
 				} else {
 					closestIsMirror = false;
@@ -138,7 +151,7 @@ vec3 cast_ray_2(vec3 orig, vec3 dir) {
 		if(closestIsMirror) {
 			orig = closestHitPoint;
 			dir = closestDir;
-			closestSoFar = 1000.0;
+			closeSoFar = 1000.0;
 		} else {
 			return colorSoFar;
 		}
@@ -149,7 +162,7 @@ vec3 cast_ray_2(vec3 orig, vec3 dir) {
 
 vec3 cast_ray(vec3 orig, vec3 dir) {
 	vec3 color;
-	float closestSoFar = 1000.0;
+	float closeSoFar = 1000.0;
 
 	bool closestIsMirror = false;
 	vec3 closestHitPoint;
@@ -160,11 +173,9 @@ vec3 cast_ray(vec3 orig, vec3 dir) {
 		for(int i= 0; i < obCount; i++){
 			float dist = ray_intersect(orig, dir, objs[i]);
 
-			if (dist > epsilon && dist < closestSoFar && dot(dir, get_norm(orig, dir, objs[i])) < 0.0) {
+			if (dist > epsilon && dist < closeSoFar && dot(dir, get_norm(orig, dir, objs[i])) < 0.0) {
 				vec3 hitPoint = (dist * dir) + orig;
-
 				colorSoFar = vec3(0.);
-
 				for(int k = 0; k < lsCount; k++){
 					if(!intersectAny(hitPoint, normalize(lights[k].pos - hitPoint), length(lights[k].pos - hitPoint))) {
 						vec3 lightFace = normalize(lights[k].pos - hitPoint);
@@ -172,28 +183,26 @@ vec3 cast_ray(vec3 orig, vec3 dir) {
 						colorSoFar += objs[i].color * max(dot(get_norm(orig, dir, objs[i]), lightFace), 0.0) * lights[k].color * fa;
 					}
 				}
+					float max = 2.0;
+					float a = random2d(dir * 2.0) * max - 1.0;
+					float b = random2d(dir * 1.0) * max - 1.0;
+					float c = random2d(dir * 3.0) * max - 1.0;
 
-				float max = 2.0;
-				float x = random2d(dir * 2.0) * max - 1.0;
-				float y = random2d(dir * 1.0) * max - 1.0;
-				float z = random2d(dir * 3.0) * max - 1.0;
+					vec3 newDir = normalize(vec3(a, b, c));
+					if(0.0 > dot(newDir, get_norm(orig, dir, objs[i]))) {
+						newDir = -newDir;
+					}
+					colorSoFar/=2.0;
+					colorSoFar += cast_ray_2(hitPoint, newDir) / 2.0;
 
-				vec3 newDir = normalize(vec3(x, y, z));
-
-				if(0.0 > dot(newDir, get_norm(orig, dir, objs[i]))) {
-					newDir = -newDir;
-				}
-				colorSoFar/=2.0;
-				colorSoFar += cast_ray_2(hitPoint, newDir) / 2.0;
-
-				closestSoFar = dist;
+				closeSoFar = dist;
 				if(objs[i].mirror) {
 					vec3 normal = get_norm(orig, dir, objs[i]);
 					float dotProd = dot(normal, dir);
 					vec3 r = dir - 2.0 * dotProd * normal;
 					closestDir = r;
 					closestHitPoint = hitPoint;
-					closestSoFar = dist;
+					closeSoFar = dist;
 					closestIsMirror = true;
 				} else {
 					closestIsMirror = false;
@@ -203,13 +212,14 @@ vec3 cast_ray(vec3 orig, vec3 dir) {
 		if(closestIsMirror) {
 			orig = closestHitPoint;
 			dir = closestDir;
-			closestSoFar = 1000.0;
+			closeSoFar = 1000.0;
 		} else {
 			return colorSoFar;
 		}
 	}
 	return colorSoFar;
 }
+
 
 void main()
 {
